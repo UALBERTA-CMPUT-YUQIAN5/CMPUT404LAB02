@@ -1,0 +1,12 @@
+1. We use SOCK_STREAM when creating the sock. We use SOCK_DGRAM to create UDP sockets.
+
+2. The client socket is active trying to make connection to other sockets whereas the server sockets will only be listening for connections.
+
+3. We use the SO_REUSEPORT or SO_REUSEADDR option when setting socket option
+
+4. We get to know their address family (AF_INET/AF_INET6), socket type (TCP/UDP), server address, server port, client address, client port and proto.
+
+5. After server side closing the TCP socket, recv will return empty string indicate that the connection is closed.
+
+6. https://github.com/yuqian5/CMPUT404LAB02
+

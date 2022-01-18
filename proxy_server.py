@@ -1,7 +1,11 @@
-#!/usr/bin/env python3
 import socket
 import sys
 import time
+
+# define address & buffer size
+HOST = ""
+PORT = 8001
+BUFFER_SIZE = 2048
 
 
 # create a tcp socket
@@ -40,12 +44,12 @@ def send_data(serversocket, payload):
     print("Payload sent successfully")
 
 
-def main():
+# get data from google
+def get_google(payload):
     try:
         # define address info, payload, and buffer size
         host = 'www.google.com'
         port = 80
-        payload = f'GET / HTTP/1.0\r\nHost: {host}\r\n\r\n'
         buffer_size = 4096
 
         # make the socket, get the ip, and connect
@@ -67,7 +71,7 @@ def main():
             if not data:
                 break
             full_data += data
-        print(full_data)
+        return full_data
     except Exception as e:
         print(e)
     finally:
@@ -75,21 +79,26 @@ def main():
         s.close()
 
 
-'''
 def main():
-    s = create_tcp_socket()
-    s.connect(("127.0.0.1", 8001))
-    s.sendall(b"foobar")
-    while True:
-        msg = s.recv(1024)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # QUESTION 3
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        if msg == b"":
-            s.close()
-            break
+        # bind socket to address
+        s.bind((HOST, PORT))
+        # set to listening mode
+        s.listen(2)
 
-        print(msg)
-        time.sleep(0.5)
-'''
+        # continuously listen for connections
+        while True:
+            conn, addr = s.accept()
+            print("Connected by", addr)
+
+            client_data = conn.recv(BUFFER_SIZE).decode()
+
+            google_data = get_google(client_data)
+            conn.sendall(google_data)
+            conn.close()
 
 
 if __name__ == "__main__":
