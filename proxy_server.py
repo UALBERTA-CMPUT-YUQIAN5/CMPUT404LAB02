@@ -1,6 +1,6 @@
 import socket
 import sys
-import time
+from multiprocessing import Process, active_children
 
 # define address & buffer size
 HOST = ""
@@ -10,38 +10,28 @@ BUFFER_SIZE = 2048
 
 # create a tcp socket
 def create_tcp_socket():
-    print('Creating socket')
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     except socket.error as msg:
-        print(f'Failed to create socket. Error code: {str(msg[0])} , Error message : {msg[1]}')
         sys.exit()
-    print('Socket created successfully')
     return s
 
 
 # get host information
 def get_remote_ip(host):
-    print(f'Getting IP for {host}')
     try:
         remote_ip = socket.gethostbyname(host)
     except socket.gaierror:
-        print('Hostname could not be resolved. Exiting')
         sys.exit()
-
-    print(f'Ip address of {host} is {remote_ip}')
     return remote_ip
 
 
 # send data to server
 def send_data(serversocket, payload):
-    print("Sending payload")
     try:
         serversocket.sendall(payload.encode())
     except socket.error:
-        print('Send failed')
         sys.exit()
-    print("Payload sent successfully")
 
 
 # get data from google
@@ -79,6 +69,16 @@ def get_google(payload):
         s.close()
 
 
+# handler thread for an incoming connection
+def handle_connection(conn):
+    client_data = conn.recv(BUFFER_SIZE).decode()
+
+    google_data = get_google(client_data)
+    conn.sendall(google_data)
+    conn.shutdown(socket.SHUT_RDWR)
+    conn.close()
+
+
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # QUESTION 3
@@ -89,16 +89,16 @@ def main():
         # set to listening mode
         s.listen(2)
 
+        # join all finished thread
+        active_children()
+
         # continuously listen for connections
         while True:
             conn, addr = s.accept()
             print("Connected by", addr)
 
-            client_data = conn.recv(BUFFER_SIZE).decode()
-
-            google_data = get_google(client_data)
-            conn.sendall(google_data)
-            conn.close()
+            p = Process(target=handle_connection, args=(conn, ))
+            p.start()
 
 
 if __name__ == "__main__":
